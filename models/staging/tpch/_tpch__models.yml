@@ -1,0 +1,265 @@
+version: 2
+
+# Staging TPC-H > documentación y tests de calidad de los datos.
+# Cada modelo conserva el grano de su entidad de origen y estandariza los nombres de columnas.
+
+models:
+  # CUSTOMER > una fila por cliente.
+  - name: stg_tpch__customer
+    description: >
+      Modelo de staging de clientes de TPC-H. Contiene una fila por cliente
+      y estandariza los nombres de las columnas de origen para las transformaciones posteriores.
+    columns:
+      - name: customer_key
+        description: Identificador único del cliente.
+        tests:
+          - not_null
+          - unique
+      - name: customer_name
+        description: Nombre del cliente.
+      - name: address
+        description: Dirección del cliente.
+      - name: nation_key
+        description: Identificador del país asociado al cliente.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__nation')
+                field: nation_key
+      - name: phone_number
+        description: Número de teléfono del cliente.
+      - name: account_balance
+        description: Saldo de la cuenta del cliente.
+      - name: market_segment
+        description: Segmento de mercado asignado al cliente.
+      - name: comment
+        description: Comentario asociado al cliente.
+
+  # ORDERS > una fila por pedido.
+  - name: stg_tpch__orders
+    description: >
+      Modelo de staging de pedidos de TPC-H. Contiene una fila por pedido
+      y estandariza los nombres de las columnas de origen para las transformaciones posteriores.
+    columns:
+      - name: order_key
+        description: Identificador único del pedido.
+        tests:
+          - not_null
+          - unique
+      - name: customer_key
+        description: Identificador del cliente que realizó el pedido.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__customer')
+                field: customer_key
+      - name: order_status
+        description: Estado del pedido.
+      - name: total_price
+        description: Precio total registrado a nivel de pedido.
+      - name: order_date
+        description: Fecha en la que se realizó el pedido.
+      - name: order_priority
+        description: Prioridad asignada al pedido.
+      - name: clerk
+        description: Empleado asociado al pedido.
+      - name: ship_priority
+        description: Prioridad de envío asignada al pedido.
+      - name: comment
+        description: Comentario asociado al pedido.
+  # PART > una fila por producto.
+  - name: stg_tpch__part
+    description: >
+      Modelo de staging de productos de TPC-H. Contiene una fila por producto
+      y estandariza los nombres de las columnas de origen para las transformaciones posteriores.
+    columns:
+      - name: part_key
+        description: Identificador único del producto.
+        tests:
+          - not_null
+          - unique
+      - name: part_name
+        description: Nombre del producto.
+      - name: manufacturer
+        description: Fabricante del producto.
+      - name: brand
+        description: Marca asociada al producto.
+      - name: part_type
+        description: Tipo o categoría del producto.
+      - name: part_size
+        description: Tamaño del producto.
+      - name: container
+        description: Tipo de contenedor utilizado para el producto.
+      - name: retail_price
+        description: Precio de venta del producto.
+      - name: comment
+        description: Comentario asociado al producto.
+
+  # SUPPLIER > una fila por proveedor.
+  - name: stg_tpch__supplier
+    description: >
+      Modelo de staging de proveedores de TPC-H. Contiene una fila por proveedor
+      y estandariza los nombres de las columnas de origen para las transformaciones posteriores.
+    columns:
+      - name: supplier_key
+        description: Identificador único del proveedor.
+        tests:
+          - not_null
+          - unique
+      - name: supplier_name
+        description: Nombre del proveedor.
+      - name: address
+        description: Dirección del proveedor.
+      - name: nation_key
+        description: Identificador del país asociado al proveedor.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__nation')
+                field: nation_key
+      - name: phone_number
+        description: Número de teléfono del proveedor.
+      - name: account_balance
+        description: Saldo de la cuenta del proveedor.
+      - name: comment
+        description: Comentario asociado al proveedor.
+
+  # NATION > una fila por país.
+  - name: stg_tpch__nation
+    description: >
+      Modelo de staging de países de TPC-H. Contiene una fila por país
+      y relaciona cada país con su región correspondiente.
+    columns:
+      - name: nation_key
+        description: Identificador único del país.
+        tests:
+          - not_null
+          - unique
+      - name: nation_name
+        description: Nombre del país.
+      - name: region_key
+        description: Identificador de la región asociada al país.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__region')
+                field: region_key
+      - name: comment
+        description: Comentario asociado al país.
+  # REGION > una fila por región.
+  - name: stg_tpch__region
+    description: >
+      Modelo de staging de regiones de TPC-H. Contiene una fila
+      por región geográfica.
+    columns:
+      - name: region_key
+        description: Identificador único de la región.
+        tests:
+          - not_null
+          - unique
+      - name: region_name
+        description: Nombre de la región.
+      - name: comment
+        description: Comentario asociado a la región.
+
+  # PARTSUPP > relación muchos-a-muchos entre productos y proveedores.
+  # El grano está definido por la combinación part_key + supplier_key.
+  - name: stg_tpch__partsupp
+    description: >
+      Modelo de staging de la relación producto-proveedor de TPC-H.
+      Contiene una fila por cada combinación única de producto y proveedor.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - part_key
+              - supplier_key
+    columns:
+      - name: part_key
+        description: Identificador del producto.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__part')
+                field: part_key
+      - name: supplier_key
+        description: Identificador del proveedor.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__supplier')
+                field: supplier_key
+      - name: available_quantity
+        description: Cantidad disponible del producto para el proveedor.
+      - name: supply_cost
+        description: Coste de suministro del producto.
+      - name: comment
+        description: Comentario asociado a la relación producto-proveedor.
+  # LINEITEM > una fila por línea de pedido.
+  # El grano está definido por la combinación order_key + line_number.
+  # Es el único modelo de staging materializado de forma incremental.
+  - name: stg_tpch__lineitem
+    description: >
+      Modelo incremental de staging de líneas de pedido de TPC-H.
+      Contiene una fila por línea de pedido, identificada mediante
+      la combinación de order_key y line_number.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - order_key
+              - line_number
+    columns:
+      - name: order_key
+        description: Identificador del pedido al que pertenece la línea.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__orders')
+                field: order_key
+      - name: part_key
+        description: Identificador del producto incluido en la línea de pedido.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__part')
+                field: part_key
+      - name: supplier_key
+        description: Identificador del proveedor asociado a la línea de pedido.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__supplier')
+                field: supplier_key
+      - name: line_number
+        description: Número de línea dentro del pedido.
+        tests:
+          - not_null
+      - name: quantity
+        description: Cantidad solicitada en la línea de pedido.
+      - name: extended_price
+        description: Importe de la línea antes de aplicar el descuento.
+      - name: discount
+        description: Porcentaje de descuento aplicado a la línea.
+      - name: tax
+        description: Porcentaje de impuesto asociado a la línea.
+      - name: return_flag
+        description: Indicador del estado de devolución de la línea.
+      - name: line_status
+        description: Estado de la línea de pedido.
+      - name: ship_date
+        description: Fecha de envío de la línea de pedido.
+      - name: commit_date
+        description: Fecha de entrega comprometida para la línea de pedido.
+      - name: receipt_date
+        description: Fecha de recepción de la línea de pedido.
+      - name: ship_instruction
+        description: Instrucciones de envío de la línea de pedido.
+      - name: ship_mode
+        description: Modalidad de envío utilizada para la línea de pedido.
+      - name: comment
+        description: Comentario asociado a la línea de pedido.

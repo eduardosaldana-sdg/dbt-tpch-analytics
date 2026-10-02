@@ -1,0 +1,27 @@
+name: dbt_tpch_analytics
+
+profile: dbt_tpch_analytics
+
+seed-paths: ["seeds"]
+model-paths: ["models"]
+macro-paths: ["macros"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  dbt_tpch_analytics:
+    +static_analysis: strict
+
+    staging:
+      +schema: staging
+      +materialized: table
+
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+
+    marts:
+      +schema: marts
+      +materialized: table

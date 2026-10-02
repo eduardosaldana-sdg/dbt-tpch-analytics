@@ -1,0 +1,84 @@
+version: 2
+
+# Intermediate > modelos reutilizables que combinan entidades de staging.
+# Esta capa concentra joins y lógica de transformación antes del consumo en marts.
+
+models:
+  # ORDER LINES > enriquece cada línea con información de su pedido.
+  # Mantiene el grano de una fila por order_key + line_number.
+  - name: int_order_lines
+    description: >
+      Modelo intermedio que enriquece las líneas de pedido de TPC-H
+      con atributos del pedido. Mantiene una fila por línea de pedido,
+      identificada mediante la combinación de order_key y line_number.
+    columns:
+      - name: order_key
+        description: Identificador del pedido al que pertenece la línea.
+      - name: line_number
+        description: Número de línea dentro del pedido.
+      - name: part_key
+        description: Identificador del producto incluido en la línea de pedido.
+      - name: supplier_key
+        description: Identificador del proveedor asociado a la línea de pedido.
+      - name: customer_key
+        description: Identificador del cliente que realizó el pedido.
+      - name: order_date
+        description: Fecha en la que se realizó el pedido.
+      - name: order_status
+        description: Estado del pedido.
+      - name: order_priority
+        description: Prioridad asignada al pedido.
+      - name: quantity
+        description: Cantidad solicitada en la línea de pedido.
+      - name: extended_price
+        description: Importe de la línea antes de aplicar el descuento.
+      - name: discount
+        description: Porcentaje de descuento aplicado a la línea.
+      - name: tax
+        description: Porcentaje de impuesto asociado a la línea.
+      - name: discounted_amount
+        description: >
+          Importe de la línea después de aplicar el descuento.
+          Se calcula mediante la macro dbt calculate_discounted_amount.
+      - name: return_flag
+        description: Indicador del estado de devolución de la línea.
+      - name: line_status
+        description: Estado de la línea de pedido.
+      - name: ship_date
+        description: Fecha de envío de la línea de pedido.
+      - name: commit_date
+        description: Fecha de entrega comprometida para la línea de pedido.
+      - name: receipt_date
+        description: Fecha de recepción de la línea de pedido.
+      - name: ship_instruction
+        description: Instrucciones de envío de la línea de pedido.
+      - name: ship_mode
+        description: Modalidad de envío utilizada para la línea de pedido.
+
+  # CUSTOMER GEOGRAPHY > enriquece clientes con país y región.
+  # Mantiene el grano de una fila por customer_key.
+  - name: int_customer_geography
+    description: >
+      Modelo intermedio que enriquece los clientes con información
+      de país y región. Mantiene una fila por cliente.
+    columns:
+      - name: customer_key
+        description: Identificador único del cliente.
+      - name: customer_name
+        description: Nombre del cliente.
+      - name: address
+        description: Dirección del cliente.
+      - name: phone_number
+        description: Número de teléfono del cliente.
+      - name: account_balance
+        description: Saldo de la cuenta del cliente.
+      - name: market_segment
+        description: Segmento de mercado asignado al cliente.
+      - name: nation_key
+        description: Identificador del país asociado al cliente.
+      - name: nation_name
+        description: Nombre del país asociado al cliente.
+      - name: region_key
+        description: Identificador de la región asociada al cliente.
+      - name: region_name
+        description: Nombre de la región asociada al cliente.

@@ -1,0 +1,33 @@
+version: 2
+
+# Fuentes originales del dataset TPC-H > proporcionadas por Snowflake.
+# Son tablas externas al proyecto dbt > dbt las referencia, pero no las construye.
+
+sources:
+  - name: tpch
+    description: >
+      Dataset de ejemplo TPC-H proporcionado por Snowflake y utilizado
+      como fuente de datos para el proyecto analítico de dbt.
+    database: SNOWFLAKE_SAMPLE_DATA
+    schema: TPCH_SF1
+    tables:
+      - name: customer
+        description: Tabla de origen que contiene los datos de clientes.
+      - name: orders
+        description: Tabla de origen que contiene los datos a nivel de pedido.
+      - name: lineitem
+        description: >
+          Tabla de origen que contiene los datos a nivel de línea de pedido.
+          Se utiliza como fuente del modelo incremental de staging.
+      - name: part
+        description: Tabla de origen que contiene los datos de productos.
+      - name: partsupp
+        description: >
+          Tabla de origen que contiene la relación entre productos
+          y proveedores.
+      - name: supplier
+        description: Tabla de origen que contiene los datos de proveedores.
+      - name: nation
+        description: Tabla de origen que contiene los datos de países.
+      - name: region
+        description: Tabla de origen que contiene los datos de regiones geográficas.

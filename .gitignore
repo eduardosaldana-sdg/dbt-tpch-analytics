@@ -1,0 +1,24 @@
+# dbt generated files
+target/
+logs/
+dbt_packages/
+dbt_internal_packages/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editor local files
+.vscode/settings.json
+.cursor/

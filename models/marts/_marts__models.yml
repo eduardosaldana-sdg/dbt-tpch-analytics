@@ -1,0 +1,216 @@
+version: 2
+
+# Marts > modelos preparados para consumo analítico.
+# Incluye dimensiones, fact de líneas de pedido y vistas agregadas.
+models:
+  # CUSTOMER DIMENSION > una fila por cliente.
+  - name: dim_customer
+    description: >
+      Dimensión de clientes preparada para consumo analítico.
+      Contiene una fila por cliente con sus atributos descriptivos y geográficos.
+    columns:
+      - name: customer_key
+        description: Identificador único del cliente.
+        tests:
+          - not_null
+          - unique
+      - name: customer_name
+        description: Nombre del cliente.
+      - name: address
+        description: Dirección del cliente.
+      - name: phone_number
+        description: Número de teléfono del cliente.
+      - name: account_balance
+        description: Saldo de la cuenta del cliente.
+      - name: market_segment
+        description: Segmento de mercado asignado al cliente.
+      - name: nation_name
+        description: País asociado al cliente.
+      - name: region_name
+        description: Región asociada al cliente.
+  # PART DIMENSION > una fila por producto.
+  - name: dim_part
+    description: >
+      Dimensión de productos preparada para consumo analítico.
+      Contiene una fila por producto con sus atributos descriptivos.
+    columns:
+      - name: part_key
+        description: Identificador único del producto.
+        tests:
+          - not_null
+          - unique
+      - name: part_name
+        description: Nombre del producto.
+      - name: manufacturer
+        description: Fabricante del producto.
+      - name: brand
+        description: Marca asociada al producto.
+      - name: part_type
+        description: Tipo o categoría del producto.
+      - name: part_size
+        description: Tamaño del producto.
+      - name: container
+        description: Tipo de contenedor utilizado para el producto.
+      - name: retail_price
+        description: Precio de venta del producto.
+  # SUPPLIER DIMENSION > una fila por proveedor.
+  - name: dim_supplier
+    description: >
+      Dimensión de proveedores preparada para consumo analítico.
+      Contiene una fila por proveedor enriquecida con información
+      de país y región.
+    columns:
+      - name: supplier_key
+        description: Identificador único del proveedor.
+        tests:
+          - not_null
+          - unique
+      - name: supplier_name
+        description: Nombre del proveedor.
+      - name: address
+        description: Dirección del proveedor.
+      - name: phone_number
+        description: Número de teléfono del proveedor.
+      - name: account_balance
+        description: Saldo de la cuenta del proveedor.
+      - name: nation_name
+        description: País asociado al proveedor.
+      - name: region_name
+        description: Región asociada al proveedor.
+
+  # ORDER LINE FACT > una fila por línea de pedido.
+  # El grano está definido por order_key + line_number.
+  - name: fct_order_lines
+    description: >
+      Tabla de hechos de líneas de pedido preparada para consumo analítico.
+      Contiene una fila por línea de pedido e incluye las claves de las
+      dimensiones, atributos del pedido y métricas a nivel de línea.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - order_key
+              - line_number
+    columns:
+      - name: order_key
+        description: Identificador del pedido al que pertenece la línea.
+        tests:
+          - not_null
+      - name: line_number
+        description: Número de línea dentro del pedido.
+        tests:
+          - not_null
+      - name: customer_key
+        description: Identificador utilizado para relacionar la fact con la dimensión de clientes.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: part_key
+        description: Identificador utilizado para relacionar la fact con la dimensión de productos.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_part')
+                field: part_key
+      - name: supplier_key
+        description: Identificador utilizado para relacionar la fact con la dimensión de proveedores.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_supplier')
+                field: supplier_key
+      - name: order_date
+        description: Fecha en la que se realizó el pedido.
+      - name: order_status
+        description: Estado del pedido.
+      - name: order_priority
+        description: Prioridad asignada al pedido.
+      - name: quantity
+        description: Cantidad solicitada en la línea de pedido.
+      - name: extended_price
+        description: Importe de la línea antes de aplicar el descuento.
+      - name: discount
+        description: Porcentaje de descuento aplicado a la línea.
+      - name: discounted_amount
+        description: Importe de la línea después de aplicar el descuento.
+      - name: tax
+        description: Porcentaje de impuesto asociado a la línea.
+      - name: return_flag
+        description: Indicador del estado de devolución de la línea.
+      - name: line_status
+        description: Estado de la línea de pedido.
+      - name: ship_date
+        description: Fecha de envío de la línea de pedido.
+      - name: commit_date
+        description: Fecha de entrega comprometida para la línea de pedido.
+      - name: receipt_date
+        description: Fecha de recepción de la línea de pedido.
+      - name: ship_instruction
+        description: Instrucciones de envío de la línea de pedido.
+      - name: ship_mode
+        description: Modalidad de envío utilizada para la línea de pedido.
+
+  # MONTHLY SALES > una fila por mes.
+  # Cambia el grano de líneas individuales a métricas mensuales agregadas.
+  - name: agg_monthly_sales
+    description: >
+      Agregado mensual de ventas preparado para consumo analítico.
+      Contiene una fila por mes con métricas de pedidos, clientes,
+      cantidades e importes.
+    columns:
+      - name: order_month
+        description: Mes representado por la fila agregada.
+        tests:
+          - not_null
+          - unique
+      - name: order_count
+        description: Número de pedidos distintos realizados durante el mes.
+      - name: line_count
+        description: Número de líneas de pedido durante el mes.
+      - name: customer_count
+        description: Número de clientes distintos con pedidos durante el mes.
+      - name: total_quantity
+        description: Cantidad total solicitada durante el mes.
+      - name: gross_amount
+        description: Suma del importe de las líneas antes de aplicar descuentos durante el mes.
+      - name: discounted_amount
+        description: Suma del importe de las líneas después de aplicar descuentos durante el mes.
+
+  # SUPPLIER SALES > una fila por proveedor.
+  # Combina fact + dimensión y agrega las métricas de venta.
+  - name: agg_supplier_sales
+    description: >
+      Agregado de ventas por proveedor preparado para consumo analítico.
+      Contiene una fila por proveedor con sus atributos geográficos
+      y las métricas agregadas de sus líneas de pedido.
+    columns:
+      - name: supplier_key
+        description: Identificador único del proveedor representado por la fila.
+        tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_supplier')
+                field: supplier_key
+      - name: supplier_name
+        description: Nombre del proveedor.
+      - name: nation_name
+        description: País asociado al proveedor.
+      - name: region_name
+        description: Región asociada al proveedor.
+      - name: order_count
+        description: Número de pedidos distintos asociados al proveedor.
+      - name: line_count
+        description: Número de líneas de pedido asociadas al proveedor.
+      - name: total_quantity
+        description: Cantidad total asociada al proveedor.
+      - name: gross_amount
+        description: Suma del importe de las líneas antes de aplicar descuentos para el proveedor.
+      - name: discounted_amount
+        description: Suma del importe de las líneas después de aplicar descuentos para el proveedor.
